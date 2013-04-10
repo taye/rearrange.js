@@ -4,13 +4,12 @@
  * https://raw.github.com/taye/rearrange.js/master/LICENSE
  */
 
-(function () {
+(function (interact) {
     'use strict';
 
     var document = window.document,
         target = null,
         targetPosition = null,
-        scriptElement,
         styleElement,
         transformProp;
 
@@ -49,71 +48,53 @@
 
     function dragStart (event) {
         if (!target.rearranged) {
-            target.rearranged = {
-                x: 0,
-                y: 0
-            }
+            target.rearranged = { x: 0, y: 0 };
         }
+        target.classList.add('rearranging');
     }
 
     function dragMove (event) {
         target.rearranged.x += event.dx;
         target.rearranged.y += event.dy;
 
-        target.style[transformProp] = [
-            'translate(',
-            target.rearranged.x,
-            'px, ',
-            target.rearranged.y,
-            'px)'
-        ].join('');
+        target.style[transformProp] =
+            'translate(' + target.rearranged.x + 'px, ' + target.rearranged.y + 'px)';
     }
 
-    if (!window.interact) {
-        var loadInteract = function () {
-            scriptElement = document.createElement('script');
-            scriptElement.src = 'https://raw.github.com/taye/interact.js/master/interact.js';
-            document.body.appendChild(scriptElement);
-        }
-
-        if (document.readyState !== 'complete') {
-            document.addEventListener('DOMContentLoaded', loadInteract);
-        }
-        else {
-            loadInteract();
-        }
+    function dragEnd (event) {
+        target.classList.remove('rearranging');
     }
 
     function init () {
-        if (document.readyState !== 'complete' || !window.interact) {
-            setTimeout(init, 100);
-            return;
-        }
-
-        interact(document.documentElement).draggable(true)
-            .actionChecker(function (event) {
-                if (event.target !== document.documentElement) {
-                    return 'drag';
-                }
-            })
-            .checkOnHover(false)
-            .bind('mouseover', onMouseOver)
-            .bind('wheel'    , onWheel)
-            .bind('dragstart' , dragStart)
-            .bind('dragmove' , dragMove);
-
-        styleElement = document.createElement('style');
-        styleElement.type = 'text/css';
-        styleElement.innerHTML ='.rearrange-target{border:yellow solid 3px !important;} html .rearranging{border-style:dashed !important;}';
-        document.body.appendChild(styleElement);
-
         transformProp = 'transform' in document.body.style?
             'transform': 'webkitTransform' in document.body.style?
                 'webkitTransform': 'MozTransform' in document.body.style?
                     'MozTransform': 'oTransform' in document.body.style?
                         'oTransform': 'msTransform';
+
+        interact(document.documentElement)
+            .draggable(true)
+            .actionChecker(function (event) {
+                return target? 'drag': null;
+            })
+            .checkOnHover(false)
+            .bind('mouseover', onMouseOver)
+            .bind('wheel'    , onWheel)
+            .bind('dragstart'  , dragStart)
+            .bind('dragmove'   , dragMove)
+            .bind('dragend'    , dragEnd);
+
+        styleElement = document.createElement('style');
+        styleElement.type = 'text/css';
+        styleElement.innerHTML = '.rearrange-target{border:yellow solid 3px !important;} .rearranging{border-style:dashed !important;}';
+        document.body.appendChild(styleElement);
     };
 
-    init();
+    if (document.readyState !== 'complete') {
+        document.addEventListener('DOMContentLoaded', init);
+    }
+    else {
+        init();
+    }
 
-}());
+}(window.interact));
