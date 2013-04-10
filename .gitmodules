@@ -1,0 +1,3 @@
+[submodule "interact.js"]
+	path = interact.js
+	url = git://github.com/taye/interact.js.git
